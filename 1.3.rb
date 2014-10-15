@@ -26,13 +26,14 @@ end
 
 
 # Given data
-ciphered_string = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
-
-# Known test
-p ciphered_bytes = hex_to_bytes(ciphered_string)
-p deciphered_bytes = decipher(ciphered_bytes, 88)
-p bytes_to_s(deciphered_bytes)
+ciphered_hex = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
 
 # Test
+ciphered_bytes = hex_to_bytes(ciphered_hex)
 possible_outputs = rainbow_decipher(ciphered_bytes).map(&method(:bytes_to_s))
-puts possible_outputs.max_by(&:english_rating)
+output = possible_outputs.max_by(&:english_rating)
+if output == "Cooking MC's like a pound of bacon"
+  puts "Great success"
+else
+  puts "Fail: #{output.inspect}"
+end
