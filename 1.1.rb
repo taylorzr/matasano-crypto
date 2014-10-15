@@ -5,14 +5,12 @@ def hex_to_base64(hex)
   Base64.strict_encode64(string)
 end
 
-
-# Test
+# Given data 
 input = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d"
-
-output = hex_to_base64(input)
-
 expected_output= "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
 
+# Test
+output = hex_to_base64(input)
 if output == expected_output
   puts "Great success"
 else
