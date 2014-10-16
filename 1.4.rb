@@ -24,8 +24,6 @@ def rainbow_decipher(bytes, start: 0, stop: 127)
   (start..stop).collect{ |key| decipher(bytes, key) }
 end
 
-require 'pry'
-
 def file_lines_to_a(file_path)
   file = File.open(file_path, "r")
   file.each_line.collect do |line|
