@@ -1,11 +1,4 @@
 class String
-  def ham_diff(other)
-    self.bytes.zip(other.bytes).reduce(0) do |count, (self_byte, other_byte)|
-      diff = (self_byte ^ other_byte).to_s(2).count("1")
-      count + diff
-    end
-  end
-
   def english_rating
     common_chars = "ETAOIN SHRDLU"
     common_chars.each_char.with_index.reduce(0) do |rating, (char, index) |
@@ -13,6 +6,10 @@ class String
       rating + (multiplier * self.upcase.count(char))
     end
   end
+end
+
+class Bytes
+  
 end
 
 def decipher(bytes, key)
@@ -38,8 +35,7 @@ def average_ham_diff(byte_groups)
   total_diff.to_f / byte_groups.length
 end
 
-def find_key_size(ciphered_string, smallest: 2, largest: 40)
-  ciphered_bytes = ciphered_string.unpack("C*")
+def find_key_size(ciphered_bytes, smallest: 2, largest: 40)
   keyed_ham_diffs = (smallest..largest).collect do |key_size|
     byte_groups = ciphered_bytes.each_slice(key_size).to_a
     diff = average_ham_diff(byte_groups)
@@ -50,32 +46,27 @@ def find_key_size(ciphered_string, smallest: 2, largest: 40)
 end
 
 require 'base64'
+require 'pry'
 
-def base64_file_to_a(file_path)
+def base64_file_bytes(file_path)
   file = File.open(file_path, "r")
-  file.each_line.collect do |line|
+  line_strings = file.each_line.collect do |line|
     Base64.decode64(line)
   end
+  #binding.pry
+  line_strings.join.unpack("C*")
 end
 
 def group_bytes(bytes, key_size)
-  bytes.group_by.with_index{ |byte, index| index % key_size } 
+  bytes.group_by.with_index{ |byte, index| index % key_size }.values 
 end
 
-# Given data
-s1 = "this is a test"
-s2 = "wokka wokka!!!"
-diff = 37
-
-p s1.ham_diff(s2) == 37
-
-require 'pry'
-
-ciphered = base64_file_to_a("6.txt").join
-p key_size = find_key_size(ciphered)
-grouped_bytes = group_bytes(ciphered.bytes, key_size)
-plain_texts = grouped_bytes.collect do |indexed_bytes|
-  plain_texts = rainbow_decipher(indexed_bytes.last).map{ |bytes| bytes.pack("C*") }
+# Test
+ciphered_bytes = base64_file_bytes("6.txt")
+key_size = find_key_size(ciphered_bytes)
+grouped_bytes = group_bytes(ciphered_bytes, key_size)
+plain_texts = grouped_bytes.collect do |bytes|
+  plain_texts = rainbow_decipher(bytes).map{ |bytes| bytes.pack("C*") }
   plain_texts.max_by(&:english_rating) 
 end
 
