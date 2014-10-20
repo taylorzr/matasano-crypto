@@ -12,12 +12,15 @@ class Array
   def decrypt
     key_size = self.key_size
     grouped_bytes = self.group_by.with_index{ |byte, index| index % key_size }.values
-    plain_texts = grouped_bytes.collect do |bytes|
-      plain_texts = rainbow_decipher(bytes).map{ |bytes| bytes.pack("C*") }
-      plain_texts.max_by(&:english_rating) 
+    key_array = []
+    grouped_plain_texts = grouped_bytes.collect do |bytes|
+      rainbow_plain_texts = rainbow_xor(bytes).map{ |bytes| bytes.pack("C*") }
+      best_plain_text = rainbow_plain_texts.max_by(&:english_rating) 
+      key_array << rainbow_plain_texts.index(best_plain_text)
+      best_plain_text
     end
 
-    plain_texts = plain_texts.collect do |group|
+    plain_texts = grouped_plain_texts.collect do |group|
       group.each_char.to_a
     end
 
@@ -25,6 +28,7 @@ class Array
       plain_text << plain_texts.collect{ |plain_text_group| plain_text_group[group_number] }
     end
 
+    puts key_array.pack("C*")
     result.flatten.join
   end
 
@@ -53,12 +57,12 @@ class Array
     keyed_ham_diffs.first.first
   end
 
-  def decipher(bytes, key)
+  def xor(bytes, key)
     bytes.map{ |byte| byte ^ key }  
   end
 
-  def rainbow_decipher(bytes, start: 0, stop: 127)
-    (start..stop).collect{ |key| decipher(bytes, key) }
+  def rainbow_xor(bytes, start: 0, stop: 127)
+    (start..stop).collect{ |key| xor(bytes, key) }
   end
 end
 
@@ -69,7 +73,6 @@ def base64_file_bytes(file_path)
   line_strings = file.each_line.collect do |line|
     Base64.decode64(line)
   end
-  #binding.pry
   line_strings.join.unpack("C*")
 end
 
