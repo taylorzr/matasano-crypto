@@ -9,27 +9,37 @@ class String
 end
 
 class Array
+  def decrypt_group
+    plain_text_rainbow = self.rainbow_xor.map{ |byte| byte.pack("C*") }
+    plain_text = plain_text_rainbow.max_by(&:english_rating) 
+    key_char = plain_text_rainbow.index(plain_text).chr
+    [key_char, plain_text.each_char.to_a]
+  end
+
+  def group_by_key_size(key_size)
+    self.group_by.with_index{ |byte, index| index % key_size }.values
+  end
+
+  def ungroup_by_key_size(key_size)
+    (0..key_size-1).each_with_object([]) do |index, message_chars|
+      self.each do |group|
+	message_chars << group[index]
+      end
+    end
+  end
+
   def decrypt
     key_size = self.key_size
-    grouped_bytes = self.group_by.with_index{ |byte, index| index % key_size }.values
-    key_array = []
-    grouped_plain_texts = grouped_bytes.collect do |bytes|
-      rainbow_plain_texts = rainbow_xor(bytes).map{ |bytes| bytes.pack("C*") }
-      best_plain_text = rainbow_plain_texts.max_by(&:english_rating) 
-      key_array << rainbow_plain_texts.index(best_plain_text)
-      best_plain_text
+    bytes_groups = self.group_by_key_size(key_size)
+    grouped_message_chars = []
+    key_chars = []
+    bytes_groups.each do |bytes_group|
+      key_char, message_chars = bytes_group.decrypt_group
+      key_chars << key_char
+      grouped_message_chars << message_chars
     end
-
-    plain_texts = grouped_plain_texts.collect do |group|
-      group.each_char.to_a
-    end
-
-    result = (0..28).reduce([]) do |plain_text, group_number|
-      plain_text << plain_texts.collect{ |plain_text_group| plain_text_group[group_number] }
-    end
-
-    puts key_array.pack("C*")
-    result.flatten.join
+    message_chars = grouped_message_chars.ungroup_by_key_size(key_size)
+    [key_chars, message_chars]
   end
 
   def ham_diff(other)
@@ -38,31 +48,31 @@ class Array
     end
   end
 
-  def average_ham_diff(key_size)
-    byte_groups = self.each_slice(key_size).to_a
-    total_diff = (1..byte_groups.count - 2).to_a.reduce(0) do |diff, index|
-      byte_group1, byte_group2 = byte_groups[index - 1], byte_groups[index]
-      diff + byte_group1.ham_diff(byte_group2)
+  def key_rating(key_size)
+    byte_groups = self.each_slice(key_size).to_a[0..-2]
+    total_diff = byte_groups[0..-2]
+		 .zip(byte_groups[1..-1])
+		 .reduce(0) do |total_diff, (byte_group, byte_group_next)|
+      diff = byte_group.ham_diff(byte_group_next)
+      total_diff + diff
     end
-    total_diff.to_f / byte_groups.length
+    total_diff.to_f / (byte_groups.length - 1) / key_size
   end
 
   def key_size(smallest: 2, largest: 40)
-    keyed_ham_diffs = (smallest..largest).collect do |potential_key_size|
-      average_diff = self.average_ham_diff(potential_key_size)
-      normalized_diff = average_diff / potential_key_size
-      [potential_key_size, normalized_diff]
+    key_sizes_rainbow = (smallest..largest).each_with_object({}) do |potential_key_size, key_sizes|
+      key_rating  = self.key_rating(potential_key_size)
+      key_sizes[potential_key_size] = key_rating
     end
-    keyed_ham_diffs.sort_by!{ |(key_size, ham_diff)| ham_diff }
-    keyed_ham_diffs.first.first
+    key_sizes_rainbow.min_by{ |key_size, key_rating| key_rating }.first
   end
 
   def xor(bytes, key)
     bytes.map{ |byte| byte ^ key }  
   end
 
-  def rainbow_xor(bytes, start: 0, stop: 127)
-    (start..stop).collect{ |key| xor(bytes, key) }
+  def rainbow_xor(start: 0, stop: 127)
+    (start..stop).collect{ |key| xor(self, key) }
   end
 end
 
@@ -78,5 +88,12 @@ end
 
 # Test
 bytes = base64_file_bytes("6.txt")
-puts bytes.key_size
-puts bytes.decrypt
+key_chars, message_chars = bytes.decrypt
+puts
+puts "Key: "
+puts "  #{key_chars.join}"
+puts
+puts "Message: "
+message_chars.join.split("\n").each do |line|
+  puts "  #{line}"
+end
