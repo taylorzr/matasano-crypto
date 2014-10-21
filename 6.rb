@@ -67,12 +67,12 @@ class Array
     key_sizes_rainbow.min_by{ |key_size, key_rating| key_rating }.first
   end
 
-  def xor(bytes, key)
-    bytes.map{ |byte| byte ^ key }  
+  def xor(key)
+    self.collect{ |byte| byte ^ key }  
   end
 
   def rainbow_xor(start: 0, stop: 127)
-    (start..stop).collect{ |key| xor(self, key) }
+    (start..stop).collect{ |key| self.xor(key) }
   end
 end
 
