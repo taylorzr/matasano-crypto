@@ -19,6 +19,7 @@ class Array
 end
 
 class String
+  # The decrypting is working but not removing padding. 
   def cbc_decrypt(key, iv)
     decipher = OpenSSL::Cipher.new('AES-128-ECB')
     decipher.decrypt
@@ -27,26 +28,27 @@ class String
     blocked_bytes = self.bytes.each_slice(iv.length).to_a
     previous_block = iv
     decrypted_blocks = blocked_bytes.collect do |block|
-      deciphered_block = decipher.update(block.pack("C*")) + decipher.final
+      deciphered_block = decipher.update(block.pack("C*"))
       dechained_block = deciphered_block.bytes.xor(previous_block.bytes).pack("C*")
       previous_block = block.pack("C*")
       dechained_block
     end
-    decrypted_blocks.join
+    decrypted_blocks.join + decipher.final
   end
 
   def cbc_encrypt(key, iv)
     cipher = OpenSSL::Cipher.new('AES-128-ECB')
     cipher.encrypt
     cipher.key = key
+    #cipher.padding = 0
     blocked_bytes = self.bytes.each_slice(iv.length).to_a   
     previous_block = iv
     encrypted_blocks = blocked_bytes.collect do |block|
       chained_block = block.xor(previous_block.bytes)    
-      ciphered_block = cipher.update(chained_block.pack("C*")) + cipher.final
+      ciphered_block = cipher.update(chained_block.pack("C*"))
       previous_block = ciphered_block
     end
-    encrypted_blocks.join
+    encrypted_blocks.join + cipher.final
   end
 
 end
@@ -58,3 +60,5 @@ test_string = "Zach is hacking and he needs a string that is much longer so he c
 encrypted_test = test_string.cbc_encrypt("YELLOW SUBMARINE", 0.chr * 16)
 p decrypted_test = encrypted_test.cbc_decrypt("YELLOW SUBMARINE", 0.chr * 16)
 
+puts
+puts bytes.pack("C*").cbc_decrypt("YELLOW SUBMARINE", 0.chr * 16)
