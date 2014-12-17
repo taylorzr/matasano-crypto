@@ -19,7 +19,6 @@ class Array
 end
 
 class String
-  # The decrypting is working but not removing padding. 
   def cbc_decrypt(key, iv)
     decipher = OpenSSL::Cipher.new('AES-128-ECB')
     decipher.decrypt
@@ -54,11 +53,4 @@ class String
 end
 
 bytes = base64_file_bytes("10.txt")
-
-test_string = "Zach is hacking and he needs a string that is much longer so he can see if this is working so hopefully this string is long enough"
-
-encrypted_test = test_string.cbc_encrypt("YELLOW SUBMARINE", 0.chr * 16)
-p decrypted_test = encrypted_test.cbc_decrypt("YELLOW SUBMARINE", 0.chr * 16)
-
-puts
 puts bytes.pack("C*").cbc_decrypt("YELLOW SUBMARINE", 0.chr * 16)
